@@ -59,6 +59,7 @@ BmpDecoder::BmpDecoder()
     m_origin = ORIGIN_TL;
     m_bpp = 0;
     m_rle_code = BMP_RGB;
+    m_bitfield_color_mask_format = BmpBitFieldColorMaskFormat::DEFAULT;
     initMask();
 }
 
@@ -159,12 +160,17 @@ bool  BmpDecoder::readHeader()
                     int greenmask = m_strm.getDWord();
                     int bluemask = m_strm.getDWord();
 
-                    if( bluemask == 0x1f && greenmask == 0x3e0 && redmask == 0x7c00 )
+                    if( bluemask == 0x1f && greenmask == 0x3e0 && redmask == 0x7c00 ) {
+                        // FIXME: Deprecate this in favor of switching on m_bitfield_color_mask_format
                         m_bpp = 15;
-                    else if( bluemask == 0x1f && greenmask == 0x7e0 && redmask == 0xf800 )
+                    } else if( bluemask == 0xffff && greenmask == 0xffff && redmask == 0xffff ) {
+                        m_bitfield_color_mask_format = BmpBitFieldColorMaskFormat::BGRFF_16BIT;
+                    }
+                    else if( bluemask == 0x1f && greenmask == 0x7e0 && redmask == 0xf800 ) {
                         ;
-                    else
+                    } else {
                         result = false;
+                    } 
                 }
                 else if (m_bpp == 32 && m_rle_code == BMP_BITFIELDS)
                 {
@@ -233,6 +239,12 @@ bool  BmpDecoder::readData( Mat& img )
     bool color = img.channels() > 1;
     uchar  gray_palette[256] = {0};
     bool   result = false;
+    // m_width is 11952, and m_height is 7884
+    // the pitch if the bits per pixel will be:
+    // m_width (11952) * 16 = 191232 bits representing a single row in the image.
+    // 191232 / 8 = 23904
+    // (191232 + 7) / 8 = 23904.875 + 3 = 23907.875
+    // 
     int  src_pitch = ((m_width*(m_bpp != 15 ? m_bpp : 16) + 7)/8 + 3) & -4;
     int  nch = color ? 3 : 1;
     int  y, width3 = m_width*nch;
@@ -470,6 +482,7 @@ decode_rle8_bad: ;
             }
             break;
         /************************* 15 BPP ************************/
+        // FIME: Deprecate this in favor of switching on m_bitfield_color_mask_format
         case 15:
             for( y = 0; y < m_height; y++, data += step )
             {
@@ -486,10 +499,17 @@ decode_rle8_bad: ;
             for( y = 0; y < m_height; y++, data += step )
             {
                 m_strm.getBytes( src, src_pitch );
-                if( !color )
-                    icvCvt_BGR5652Gray_8u_C2C1R( src, 0, data, 0, Size(m_width,1) );
+                if( m_bitfield_color_mask_format == BmpBitFieldColorMaskFormat::BGRFF_16BIT )
+                {
+                    icvCvt_BGRFFFF2BGR_8u_C2C1R(src, 0, data, 0, Size(m_width, 1));
+                }
                 else
-                    icvCvt_BGR5652BGR_8u_C2C3R( src, 0, data, 0, Size(m_width,1) );
+                {
+                    if( !color )
+                        icvCvt_BGR5652Gray_8u_C2C1R( src, 0, data, 0, Size(m_width,1) );
+                    else
+                        icvCvt_BGR5652BGR_8u_C2C3R( src, 0, data, 0, Size(m_width,1) );
+                }
             }
             result = true;
             break;

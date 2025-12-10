@@ -56,6 +56,12 @@ enum BmpCompression
     BMP_BITFIELDS = 3
 };
 
+enum BmpBitFieldColorMaskFormat
+{
+    DEFAULT = 0,
+    BGRFF_16BIT
+};
+
 
 // Windows Bitmap reader
 class BmpDecoder CV_FINAL : public BaseImageDecoder
@@ -83,15 +89,16 @@ protected:
         ORIGIN_BL = 1
     };
 
-    RLByteStream    m_strm;
-    PaletteEntry    m_palette[256];
-    Origin          m_origin;
-    int             m_bpp;
-    int64_t         m_offset;
-    BmpCompression  m_rle_code;
-    uint            m_rgba_mask[4];
-    int             m_rgba_bit_offset[4];
-    float           m_rgba_scale_factor[4];
+    RLByteStream               m_strm;
+    PaletteEntry               m_palette[256];
+    Origin                     m_origin;
+    int                        m_bpp;
+    int64_t                    m_offset;
+    BmpCompression             m_rle_code;
+    uint                       m_rgba_mask[4];
+    int                        m_rgba_bit_offset[4];
+    float                      m_rgba_scale_factor[4];
+    BmpBitFieldColorMaskFormat m_bitfield_color_mask_format;
 };
 
 

@@ -263,6 +263,30 @@ void icvCvt_BGR2RGB_16u_C3R( const ushort* bgr, int bgr_step,
 
 typedef unsigned short ushort;
 
+void icvCvt_BGRFFFF2BGR_8u_C2C1R( const uchar* bgr_ffffs, int bgr_ffffs_step,
+    uchar* bgr, int bgr_step, Size size ) 
+{
+    // Reintepret the bytes as ushorts since each color mask is 16 bits,
+    // so that a single ptr[i] access gets the whole mask.
+    const uint16_t* src16 = reinterpret_cast<const uint16_t*>(bgr_ffffs);
+    int i;
+    for (; size.height--; bgr += bgr_step, bgr_ffffs += bgr_ffffs_step) 
+    {
+        for (i = 0; i < size.width; i++)
+        {
+            // Color mask values are 0xFFFF, the rest not having any assignable 
+            // value. e.g. 
+            // if src16[i] = 11110000 00000000 = 0xF000 
+            // src16[i] >> 8 = 00000000 11110000 = 0x00F0 
+            // static_cast<uchar>(0x00F0) = 11110000 = 0xF0
+            uchar g = static_cast<uchar>(src16[i] >> 8);  
+            // Current 3 channel pixel location of column `i` B,G,R
+            uchar* dst = bgr + 3 * i;           // CV_8UC3 output
+            dst[0] = g; dst[1] = g; dst[2] = g; // B,G,R
+        }
+    }
+}
+
 void icvCvt_BGR5552Gray_8u_C2C1R( const uchar* bgr555, int bgr555_step,
                                   uchar* gray, int gray_step, Size size )
 {

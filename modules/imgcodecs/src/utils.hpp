@@ -105,6 +105,22 @@ void icvCvt_BGRA2RGBA_16u_C4R( const ushort* bgra, int bgra_step,
                                ushort* rgba, int rgba_step, Size size );
 #define icvCvt_RGBA2BGRA_16u_C4R icvCvt_BGRA2RGBA_16u_C4R
 
+/**
+ * @brief Handle BGR images where the bpp color mask is 16 bits but is all 0xFFFF.
+ *
+ * This is a special case from SoftSolutions machine output where the bmp files
+ * whose color channels in the 16 bit color mask are all 0xFFFF, meaning they 
+ * will all be the same value per pixel.
+ *
+ * @param bgr_ffffs The raw bytes of the src BGR image.
+ * @param bgr_ffffs_step The step size of the src BGR image.
+ * @param bgr The raw bytes of the BGR image.
+ * @param bgr_step The step size of the BGR image.
+ * @param size The size of the image.
+ */
+void icvCvt_BGRFFFF2BGR_8u_C2C1R( const uchar* bgr_ffffs, int bgr_ffffs_step,
+    uchar* bgr, int bgr_step, Size size );
+
 void icvCvt_BGR5552Gray_8u_C2C1R( const uchar* bgr555, int bgr555_step,
                                   uchar* gray, int gray_step, Size size );
 void icvCvt_BGR5652Gray_8u_C2C1R( const uchar* bgr565, int bgr565_step,
